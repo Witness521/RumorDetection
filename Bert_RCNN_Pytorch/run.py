@@ -6,8 +6,7 @@ from train_eval import train, init_network
 from importlib import import_module
 import argparse
 from utils import build_dataset, build_iterator, get_time_dif
-import models.bert as bert
-import models.bert_RCNN as bertRCNN
+import models.lstm_word2vec as lstm_word2vec
 
 parser = argparse.ArgumentParser(description='Chinese Text Classification')
 # parser.add_argument('--model', type=str, required=True, help='choose a model: Bert, ERNIE')
@@ -18,7 +17,7 @@ if __name__ == '__main__':
     dataset = 'dataSet'  # 数据集
 
     # bert
-    config = bert.Config(dataset)
+    config = lstm_word2vec.Config(dataset)
     # 设置随机数的种子
     np.random.seed(1)
     torch.manual_seed(1)
@@ -36,5 +35,5 @@ if __name__ == '__main__':
     # 模型训练部分
     # 将模型加载到GPU上
     # model = bert.Model(config).to(config.device)
-    model = bert.Model(config).to(config.device)
+    model = lstm_word2vec.Model(config).to(config.device)
     train(config, model, train_iter, valid_iter, test_iter)

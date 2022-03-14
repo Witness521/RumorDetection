@@ -41,7 +41,7 @@ def build_dataset(config):
     # test是除了train数据集之外的
     test_data = df[~df.index.isin(train_data.index)]
     # valid是从train中取1/8(也就是总数据集的0.1)
-    valid_data = train_data.sample(frac=1 / 4, replace=False, random_state=0, axis=0)
+    valid_data = train_data.sample(frac=1 / 8, replace=False, random_state=0, axis=0)
     # 从train数据集中去掉valid数据集
     train_data = train_data[~train_data.index.isin(valid_data)]
     # rate是load数据的比例
@@ -66,7 +66,7 @@ def build_dataset(config):
                 for word in token:
                     words_line.append(vocab.get(word, vocab.get(UNK)))
                 contents.append((words_line, int(label), seq_len))
-        return contents  # [([...], 0), ([...], 1), ...]
+        return contents  # [([...], 0, seq_len), ([...], 1, seq_len), ...]
     train = load_dataset(train_data, config.pad_size)
     valid = load_dataset(valid_data, config.pad_size)
     test = load_dataset(test_data, config.pad_size)
