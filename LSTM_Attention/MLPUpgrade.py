@@ -235,7 +235,7 @@ class MLP():
         k折划分，第i折作为验证集
         返回X_train, y_train, X_valid, y_valid
     '''
-    def get_k_fold_data(self, k, i, X, y):  ### 此过程主要是步骤（1）
+    def get_k_fold_data(self, k, i, X, y):  # 此过程主要是步骤（1）
         # 返回第i折交叉验证时所需要的训练和验证数据，分开放，X_train为训练数据，X_valid为验证数据
         assert k > 1  # 如果k<=1则直接报错
         fold_size = X.shape[0] // k  # 每份的个数:数据总条数/折数（组数）
