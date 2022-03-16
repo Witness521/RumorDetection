@@ -114,14 +114,14 @@ def kFold_train(config, model, train_iter, test_iter):
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     # Adam优化器
-    # optimizer = BertAdam(optimizer_grouped_parameters,
-    #                      lr=config.learning_rate,
-    #                      # t_total的预热部分
-    #                      warmup=0.05,
-    #                      # 学习的训练步骤总数
-    #                      t_total=len(train_iter) * config.num_epochs)
+    optimizer = BertAdam(optimizer_grouped_parameters,
+                         lr=config.learning_rate,
+                         # t_total的预热部分
+                         warmup=0.05,
+                         # 学习的训练步骤总数
+                         t_total=len(train_iter) * config.num_epochs)
     total_batch = 0  # 记录进行到多少batch
     # 最佳损失
     best_loss = float('inf')
