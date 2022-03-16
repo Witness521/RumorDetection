@@ -11,12 +11,6 @@ class Config(object):
     def __init__(self, dataset):
         # 模型名称
         self.model_name = 'bert'
-        # 训练集
-        self.train_path = dataset + '/data/train.txt'
-        # 验证集
-        self.dev_path = dataset + '/data/valid.txt'
-        # 测试集
-        self.test_path = dataset + '/data/test.txt'
         # class_list类别
         self.class_list = [x.strip() for x in open(
             dataset + '/data/class.txt').readlines()]

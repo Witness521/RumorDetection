@@ -1,5 +1,4 @@
 /Bert_RCNN_Pytorch/bert_pretrain/
-/Bert_RCNN_Pytorch/dataSet/
-/LSTM_Attention/bert_pretrain/
-/LSTM_Attention/dataSet/
+/Bert_RCNN_Pytorch/dataSet/saved_dict/lstm_word2vec.ckpt
+/Bert_RCNN_Pytorch/dataSet/saved_dict/TextCNN.ckpt
 /.idea
