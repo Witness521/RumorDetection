@@ -18,9 +18,9 @@ if __name__ == '__main__':
     dataset = 'dataSet'  # 数据集
 
     # lstm_word2vec
-    config = lstm_word2vec.Config(dataset)
+    config = TextCNN.Config(dataset)
     # 将模型加载到GPU上
-    model = lstm_word2vec.Model(config).to(config.device)
+    model = TextCNN.Model(config).to(config.device)
     # 设置随机数的种子
     np.random.seed(1)
     torch.manual_seed(1)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
             test_average_acc += test_acc
             test_average_loss += test_loss
             # 重新装载model
-            model = lstm_word2vec.Model(config).to(config.device)
+            model = TextCNN.Model(config).to(config.device)
             fold += 1
             print(end='\n\n')
         print("5-Fold Test Acc:{0:>7.2%}".format(test_average_acc / 5))

@@ -13,4 +13,5 @@
 2. SVM的结果(直接运行SVM_classify.py即可):
 ![img.png](Bert_RCNN_Pytorch/dataSet/pic/SVM_result.png)
 3. TextCNN的结果:
+![img.png](Bert_RCNN_Pytorch/dataSet/pic/TextCNN_result.png)
 
