@@ -40,6 +40,7 @@ class BuildDataSet:
 
     '''
         对数据集进行加工
+        针对excel类型的数据格式
     '''
     def load_dataset(self, df, pad_size=32):
         contents = []
@@ -63,15 +64,14 @@ class BuildDataSet:
                     words_line.append(self.vocab.get(word, self.vocab.get(UNK)))
                 contents.append((words_line, int(label), seq_len))
         return contents  # [([...], 0, seq_len), ([...], 1, seq_len), ...]
-    '''
-        正常读取数据集
-    '''
+
+    '''正常读取数据集'''
     def build_dataset(self):
         print(f"Vocab size: {len(self.vocab)}")
         # 读取数据集
         df = pd.read_excel(self.dataLocation)
         # 划分数据集
-        # 训练集占总体的80%
+        # 训练集占总体的80% 随机采样
         train_data = df.sample(frac=0.8, replace=False, random_state=0, axis=0)
         # test是除了train数据集之外的
         test_data = df[~df.index.isin(train_data.index)]
@@ -88,11 +88,23 @@ class BuildDataSet:
     '''k折交叉验证'''
     def build_kFold_dataset(self):
         print(f"Vocab size: {len(self.vocab)}")
+        foldData = []
         # 读取数据集
         df = pd.read_excel(self.dataLocation)
-        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        kf = KFold(n_splits=5, shuffle=True) #, random_state=42
+        # 切割成五个数据集
         for train_index, test_index in kf.split(df):
-            train_data, test_data = df[train_index], df[test_index]
+            # 根据index获取对应的data(记录一下dataframe格式的数据用iloc切片)
+            train_data, test_data = df.iloc[train_index.tolist(), :], df.iloc[test_index.tolist(), :]
+            # 对train_data和test_data进行shuffle操作
+            train_data = train_data.sample(frac=1, random_state=0)
+            test_data = test_data.sample(frac=1, random_state=0)
+            # 构建数据集
+            train = self.load_dataset(train_data, self.config.pad_size)
+            test = self.load_dataset(test_data, self.config.pad_size)
+            foldData.append([train, test])   # [[train1, test1], [train2, test2]...]
+        return foldData
+
 
 
 

@@ -28,6 +28,7 @@ def init_network(model, method='xavier', exclude='embedding', seed=123):
                 pass
 
 
+'''正常划分训练集 验证集 测试集的训练方法'''
 def train(config, model, train_iter, dev_iter, test_iter):
     start_time = time.time()
     model.train()
@@ -69,7 +70,7 @@ def train(config, model, train_iter, dev_iter, test_iter):
             loss.backward()
             # 根据梯度更新网络参数
             optimizer.step()
-            if total_batch % 50 == 0:
+            if total_batch % 25 == 0:
                 # 每多少轮输出在训练集和验证集上的效果
                 true = labels.data.cpu()
                 predic = torch.max(outputs.data, 1)[1].cpu()
@@ -98,11 +99,66 @@ def train(config, model, train_iter, dev_iter, test_iter):
             break
     test(config, model, test_iter)
 
-'''
-    测试模型
-'''
+
+'''K折验证的方式训练'''
+def kFold_train(config, model, train_iter, test_iter):
+    start_time = time.time()
+    model.train()
+    param_optimizer = list(model.named_parameters())
+    # Bert的encoder有12层，
+    # 学习率不衰减的参数(集合)
+    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+    optimizer_grouped_parameters = [
+        # 分层权重衰减
+        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+    ]
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    # Adam优化器
+    # optimizer = BertAdam(optimizer_grouped_parameters,
+    #                      lr=config.learning_rate,
+    #                      # t_total的预热部分
+    #                      warmup=0.05,
+    #                      # 学习的训练步骤总数
+    #                      t_total=len(train_iter) * config.num_epochs)
+    total_batch = 0  # 记录进行到多少batch
+    # 最佳损失
+    best_loss = float('inf')
+    # 将模型设置为训练模式
+    model.train()
+    for epoch in range(config.num_epochs):
+        print('Epoch [{}/{}]'.format(epoch + 1, config.num_epochs))
+        for i, (trains, labels) in enumerate(train_iter):
+            outputs = model(trains)
+            # 将模型的参数梯度设置为0
+            model.zero_grad()
+            # 计算交叉熵损失
+            loss = F.cross_entropy(outputs, labels)
+            # 反向传播，计算当前梯度
+            loss.backward()
+            # 根据梯度更新网络参数
+            optimizer.step()
+            if total_batch % 25 == 0:
+                # 每25轮输出在训练集上的效果
+                true = labels.data.cpu()
+                predic = torch.max(outputs.data, 1)[1].cpu()
+                train_acc = metrics.accuracy_score(true, predic)
+                if loss < best_loss:
+                    best_loss = loss
+                    torch.save(model.state_dict(), config.save_path)
+                time_dif = get_time_dif(start_time)
+                msg = 'Iter: {0:>6},  Train Loss: {1:>5.2},  Train Acc: {2:>7.2%},  Time: {3}'
+                print(msg.format(total_batch, loss.item(), train_acc, time_dif))
+                model.train()
+            total_batch += 1
+    # 对模型进行测试
+    test_acc, test_loss = test(config, model, test_iter)
+    return test_acc, test_loss
+
+
+'''测试模型'''
 def test(config, model, test_iter):
-    # test
     model.load_state_dict(torch.load(config.save_path))
     # 测试状态
     # 框架会自动把BN和Dropout固定住
@@ -117,8 +173,10 @@ def test(config, model, test_iter):
     print(test_confusion)
     time_dif = get_time_dif(start_time)
     print("用时:", time_dif)
+    return test_acc, test_loss
 
 
+'''对验证集进行评估'''
 def evaluate(config, model, data_iter, test=False):
     model.eval()
     loss_total = 0
@@ -136,7 +194,6 @@ def evaluate(config, model, data_iter, test=False):
             predic = torch.max(outputs.data, 1)[1].cpu().numpy()
             labels_all = np.append(labels_all, labels)
             predict_all = np.append(predict_all, predic)
-
     acc = metrics.accuracy_score(labels_all, predict_all)
     if test:
         report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)

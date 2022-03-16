@@ -33,7 +33,7 @@ class Config(object):
         # num_classes类别数
         self.num_classes = len(self.class_list)
         # epoch数
-        self.num_epochs = 7
+        self.num_epochs = 5
         # mini-batch大小
         self.batch_size = 80
         # 每句话处理成的长度(短填长切)
