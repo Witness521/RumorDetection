@@ -17,3 +17,7 @@
 #### 4. TextCNN的结果:
 ![img.png](Bert_RCNN_Pytorch/dataSet/pic/TextCNN_result.png)
 
+
+#### Hyperparameter tuning
+pad_size的值设置成数据集中所有post按递增排序，90%位置的长度
+

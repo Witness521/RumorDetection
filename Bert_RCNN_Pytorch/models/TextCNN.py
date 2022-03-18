@@ -34,12 +34,12 @@ class Config(object):
         # mini-batch大小
         self.batch_size = 80
         # 每句话处理成的长度(短填长切)
-        self.pad_size = 300
+        self.pad_size = 140
         # lr学习率
         self.learning_rate = 5e-3
         self.dropout = 0.1
 
-        self.kernel_dim = 100
+        self.kernel_dim = 100  # 卷积产生的通道数
         self.kernel_sizes = (3, 4, 5)
 
 
@@ -50,16 +50,16 @@ class Model(nn.Module):
         # word2vec
         self.embedding = nn.Embedding.from_pretrained(config.embedding_pretrained, freeze=False)
 
-        self.convs = nn.ModuleList([nn.Conv2d(1, config.kernel_dim, (K, config.pad_size)) for K in config.kernel_sizes])
+        self.convs = nn.ModuleList([nn.Conv2d(in_channels=1, out_channels=config.kernel_dim, kernel_size=(K, 300)) for K in config.kernel_sizes])
         self.dropout = nn.Dropout(config.dropout)
         self.fc = nn.Linear(len(config.kernel_sizes) * config.kernel_dim, 2)
 
     def forward(self, x):
         x = x[0]  # 输入的句子
-        inputs = self.embedding(x).unsqueeze(1)  # (B,1,T,D)
-        inputs = [F.relu(conv(inputs)).squeeze(3) for conv in self.convs]  # [(N,Co,W), ...]*len(Ks)
-        inputs = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in inputs]  # [(N,Co), ...]*len(Ks)
-        concated = torch.cat(inputs, 1)
+        inputs = self.embedding(x).unsqueeze(1)  # (Batch_size, 1, pad_size, 每个词embedding的长度)   unsqueeze(num) 在指定位置(num)对数据进行扩充  squeeze(num)在指定位置(num)对数据进行压缩
+        inputs = [F.relu(conv(inputs)).squeeze(3) for conv in self.convs]  # 变换卷积核进行卷积
+        inputs = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in inputs]  # 在i.size(2)维上做max-pooling
+        concated = torch.cat(inputs, 1)  # 按行进行拼接
         concated = self.dropout(concated)  # (N,len(Ks)*Co)
         out = self.fc(concated)
         return out  # F.log_softmax(out,1)

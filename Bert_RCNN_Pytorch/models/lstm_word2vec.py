@@ -37,7 +37,7 @@ class Config(object):
         # mini-batch大小
         self.batch_size = 80
         # 每句话处理成的长度(短填长切)
-        self.pad_size = 100
+        self.pad_size = 140
         # lr学习率
         self.learning_rate = 5e-3
         self.dropout = 0.3

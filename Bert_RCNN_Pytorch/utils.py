@@ -9,7 +9,7 @@ from datetime import timedelta
 import pandas as pd
 from sklearn.model_selection import KFold
 
-from Bert_RCNN_Pytorch.models import TextCNN
+from Bert_RCNN_Pytorch.models import lstm_word2vec
 
 MAX_VOCAB_SIZE = 10000  # 词表长度限制
 UNK, PAD = '<UNK>', '<PAD>'  # 未知字，padding符号
@@ -163,3 +163,26 @@ def get_time_dif(start_time):
     end_time = time.time()
     time_dif = end_time - start_time
     return timedelta(seconds=int(round(time_dif)))
+
+
+'''统计post的长度，用于pad_size'''
+def collect_post_len():
+    # lstm_word2vec
+    config = lstm_word2vec.Config('dataSet')
+    # 读取数据集
+    df = pd.read_excel('dataSet/data/Chinese_Rumor_dataset_clean.xls')
+    dataset = BuildDataSet(config).load_dataset(df, pad_size=300)
+    post_length = []
+    counter = 0
+    for tup in dataset:
+        post_length.append(tup[2])
+        counter += 1
+    # 对post长度列表进行排序
+    post_length.sort()
+    # 获取90%位置的长度
+    print('所有按照长度递增排序的post中，90%的位置的长度:' + str(post_length[int(counter * 0.90)]))  # result: 140
+    print('所有按照长度递增排序的post中，95%的位置的长度:' + str(post_length[int(counter * 0.95)]))  # result: 144
+
+if __name__ == '__main__':
+    collect_post_len()
+
