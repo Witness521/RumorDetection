@@ -8,6 +8,7 @@ import argparse
 from utils import BuildDataSet, build_iterator, get_time_dif
 import models.lstm_word2vec as lstm_word2vec
 import models.TextCNN as TextCNN
+import models.bert_RCNN as bertRCNN
 
 parser = argparse.ArgumentParser(description='Chinese Text Classification')
 # parser.add_argument('--model', type=str, required=True, help='choose a model: Bert, ERNIE')
@@ -18,9 +19,9 @@ if __name__ == '__main__':
     dataset = 'dataSet'  # 数据集
 
     # lstm_word2vec
-    config = TextCNN.Config(dataset)
+    config = bertRCNN.Config(dataset)
     # 将模型加载到GPU上
-    model = TextCNN.Model(config).to(config.device)
+    model = bertRCNN.Model(config).to(config.device)
     # 设置随机数的种子
     np.random.seed(1)
     torch.manual_seed(1)
@@ -47,7 +48,7 @@ if __name__ == '__main__':
             test_average_acc += test_acc
             test_average_loss += test_loss
             # 重新装载model
-            model = TextCNN.Model(config).to(config.device)
+            model = bertRCNN.Model(config).to(config.device)
             fold += 1
             print(end='\n\n')
         print("5-Fold Test Acc:{0:>7.2%}".format(test_average_acc / 5))

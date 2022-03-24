@@ -1,9 +1,7 @@
 # coding: UTF-8
 import torch
 import torch.nn as nn
-from pytorch_pretrained import BertModel, BertTokenizer
 import numpy as np
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class Config(object):
 
