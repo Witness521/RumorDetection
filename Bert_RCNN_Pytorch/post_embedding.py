@@ -25,7 +25,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         # content的list
         self.content_list = []
-        # label的list
+        # id的list(验证读取post的顺序)
         self.id_list = []
         self.config = config
         # 队列存储每一条post的[cls]对应的输出(768维)
@@ -94,7 +94,7 @@ class Model(nn.Module):
         del outputs
         # 将content_list和id_list进行清空
         self.content_list.clear()
-        self.id_list.clear()
+        # self.id_list.clear()
 
 
     '''
@@ -105,7 +105,6 @@ class Model(nn.Module):
         df_list = self.read_dataset(dataset_len)
         for df in tqdm(df_list):
             self.save_content_id_to_list(df)
-            # print(len(self.content_list))
             self.post_embedding()
         # 将queue中的numpy取出，拼成一个大的array
         post_emb = self.save_post_cls_list.get()
@@ -117,6 +116,8 @@ class Model(nn.Module):
         # 最后将post_emb转成tensor进行存储
         post_emb = torch.from_numpy(post_emb)
         torch.save(post_emb, './dataSet/saved_tensor/post_embedding.pt')
+        # 存储self.id_list验证post的顺序
+        numpy.save('id_sequence.npy', numpy.array(self.id_list))
 
 
 if __name__ == '__main__':
