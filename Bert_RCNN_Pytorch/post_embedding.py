@@ -117,7 +117,7 @@ class Model(nn.Module):
         post_emb = torch.from_numpy(post_emb)
         torch.save(post_emb, './dataSet/saved_tensor/post_embedding.pt')
         # 存储self.id_list验证post的顺序
-        numpy.save('id_sequence.npy', numpy.array(self.id_list))
+        numpy.save('dataSet/saved_tensor/id_sequence.npy', numpy.array(self.id_list))
 
 
 if __name__ == '__main__':

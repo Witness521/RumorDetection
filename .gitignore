@@ -1,5 +1,5 @@
 /Bert_RCNN_Pytorch/bert_pretrain/
 /Bert_RCNN_Pytorch/dataSet/saved_dict/lstm_word2vec.ckpt
 /Bert_RCNN_Pytorch/dataSet/saved_dict/TextCNN.ckpt
-#/Bert_RCNN_Pytorch/dataSet/saved_tensor
+/Bert_RCNN_Pytorch/dataSet/saved_tensor
 /.idea
