@@ -11,7 +11,7 @@ from tqdm import tqdm
 # post_embedding的config
 class Config(object):
     def __init__(self):
-        self.model_name = 'bert_embedding'
+        self.model_name = 'post_embedding'
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # 设备
         self.bert_path = './bert_pretrain'
         self.dataLocation = 'dataSet/data/Chinese_Rumor_dataset_clean.xls'
