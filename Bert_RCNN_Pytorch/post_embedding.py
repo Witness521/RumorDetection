@@ -19,7 +19,7 @@ class Config(object):
         # 词嵌入的长度
         self.pad_size = 140
 
-
+# 对数据集进行读取并embedding
 class Model(nn.Module):
     def __init__(self, config):
         super(Model, self).__init__()
