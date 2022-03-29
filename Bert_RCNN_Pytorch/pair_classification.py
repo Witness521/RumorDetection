@@ -7,6 +7,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn import metrics
 
+# 设置随机种子
+random.seed(1)
+torch.manual_seed(1)
+torch.cuda.manual_seed_all(1)
+torch.backends.cudnn.deterministic = True  # 保证每次结果一样
+
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
