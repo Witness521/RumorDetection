@@ -1,2 +1,2 @@
-non-rumor
-rumor
+Real
+Fake
