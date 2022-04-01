@@ -1,5 +1,7 @@
-#### 是否使用K折交叉验证在run.py中可选  
-对于模型的选择在run.py中只需更改这三处即可
+## 使用微博谣言数据集的深度学习项目🧀
+
+#### 注：是否使用K折交叉验证在run.py中可选
+对于模型的选择在run.py中只需更改这三处即可&#x1F352;
 ![img.png](Bert_RCNN_Pytorch/dataSet/pic/pic1.png)
 
 ![img.png](Bert_RCNN_Pytorch/dataSet/pic/pic2.png)

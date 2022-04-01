@@ -25,7 +25,7 @@ class Pair_classification():
     def __init__(self):
         self.tensorLocation = './dataSet/saved_tensor/post_review/'
         # 模型训练结果保存
-        self.save_path = './dataSet/saved_dict/pair_cls.ckpt'
+        self.save_path = '../dataSet/saved_dict/pair_cls.ckpt'
         self.class_list = ['non-rumor', 'rumor']
         self.pair_tensor = []
         self.pair_label_list_batch = []  # list中存储(多个tensor, 多个label)
