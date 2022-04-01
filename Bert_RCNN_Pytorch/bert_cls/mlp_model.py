@@ -5,7 +5,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.fc1 = nn.Linear(768, 512)
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.2)
         self.fc2 = nn.Linear(512, 2)
 
     def forward(self, x):

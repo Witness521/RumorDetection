@@ -2,8 +2,6 @@ import math
 import numpy as np
 import random
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from mlp_model import Model
 from train_utils import TrainUtils
 from sklearn.model_selection import KFold
@@ -25,10 +23,10 @@ class Config():
         self.save_path = '../dataSet/saved_dict/post_cls.ckpt'
         self.class_list = ['Real', 'Fake']
         # 训练过程中的参数
-        self.learning_rate = 4e-4
+        self.learning_rate = 6e-4
         self.num_epochs = 6
-        self.batch_size = 50
-        # 声明列表存储
+        self.batch_size = 60
+        # 声明列表存储(名称固定)
         self.post_label_list = []  # list中存储(tensor, label)
         self.post_label_list_batch = []  # list中存储(多个tensor, 多个label)
 
