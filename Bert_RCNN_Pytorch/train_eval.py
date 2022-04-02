@@ -7,6 +7,7 @@ from sklearn import metrics
 import time
 from utils import get_time_dif
 from pytorch_pretrained.optimization import BertAdam
+from sklearn.metrics import precision_recall_fscore_support
 
 
 # 权重初始化，默认xavier
@@ -153,8 +154,8 @@ def kFold_train(config, model, train_iter, test_iter):
                 model.train()
             total_batch += 1
     # 对模型进行测试
-    test_acc, test_loss = test(config, model, test_iter)
-    return test_acc, test_loss
+    test_acc, test_loss, pre, recall, f1, sup = test(config, model, test_iter)
+    return test_acc, test_loss, pre, recall, f1, sup
 
 
 '''测试模型'''
@@ -164,16 +165,14 @@ def test(config, model, test_iter):
     # 框架会自动把BN和Dropout固定住
     model.eval()
     start_time = time.time()
-    test_acc, test_loss, test_report, test_confusion = evaluate(config, model, test_iter, test=True)
+    test_acc, test_loss, pre, recall, f1, sup, test_report = evaluate(config, model, test_iter, test=True)
     msg = 'Test Loss: {0:>5.2},  Test Acc: {1:>6.2%}'
     print(msg.format(test_loss, test_acc))
     print("Precision, Recall and F1-Score...")
     print(test_report)
-    print("Confusion Matrix...")
-    print(test_confusion)
     time_dif = get_time_dif(start_time)
     print("用时:", time_dif)
-    return test_acc, test_loss
+    return test_acc, test_loss, pre, recall, f1, sup
 
 
 '''对验证集进行评估'''
@@ -196,7 +195,9 @@ def evaluate(config, model, data_iter, test=False):
             predict_all = np.append(predict_all, predic)
     acc = metrics.accuracy_score(labels_all, predict_all)
     if test:
+        pre, recall, f1, sup = precision_recall_fscore_support(labels_all, predict_all)
         report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)
         confusion = metrics.confusion_matrix(labels_all, predict_all)
-        return acc, loss_total / len(data_iter), report, confusion
+        # 返回的数据依次为 准确度acc, loss, pre, recall, F1, support, repost(直接打印)
+        return acc, loss_total / len(data_iter), pre, recall, f1, sup, report
     return acc, loss_total / len(data_iter)

@@ -19,9 +19,9 @@ if __name__ == '__main__':
     dataset = 'dataSet'  # 数据集
 
     # lstm_word2vec
-    config = lstm_word2vec.Config(dataset)
+    config = TextCNN.Config(dataset)
     # 将模型加载到GPU上
-    model = lstm_word2vec.Model(config).to(config.device)
+    model = TextCNN.Model(config).to(config.device)
     # 设置随机数的种子
     np.random.seed(1)
     torch.manual_seed(1)
@@ -35,6 +35,9 @@ if __name__ == '__main__':
         # 测试集的平均acc和loss
         test_average_acc = 0
         test_average_loss = 0
+        test_all_pre = 0
+        test_all_recall = 0
+        test_all_f1 = 0
         # 记录第几个Fold
         fold = 1
         # 构建数据集
@@ -44,15 +47,25 @@ if __name__ == '__main__':
             train_iter = build_iterator(train_data, config)
             test_iter = build_iterator(test_data, config)
             # k折划分训练
-            test_acc, test_loss = kFold_train(config, model, train_iter, test_iter)
+            test_acc, test_loss, pre, recall, f1, sup = kFold_train(config, model, train_iter, test_iter)
+            # 将数据累加以计算平均值
             test_average_acc += test_acc
             test_average_loss += test_loss
+            test_all_pre += pre
+            test_all_recall += recall
+            test_all_f1 += f1
             # 重新装载model
-            model = lstm_word2vec.Model(config).to(config.device)
+            model = TextCNN.Model(config).to(config.device)
             fold += 1
             print(end='\n\n')
         print("5-Fold Test Acc:{0:>7.2%}".format(test_average_acc / 5))
         print("5-Fold Test Loss:{0:>5.2}".format(test_average_loss / 5))
+        print('Fake: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((test_all_pre / 5)[1], (test_all_recall / 5)[1],
+                                                                      (test_all_f1 / 5)[1]))
+        print('Real: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((test_all_pre / 5)[0], (test_all_recall / 5)[0],
+                                                                      (test_all_f1 / 5)[0]))
+        print('Total: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format(np.mean(test_all_pre / 5), np.mean(test_all_recall / 5),
+                                                                       np.mean(test_all_f1 / 5)))
 
     elif isKFold in ['N', 'n']:  # 不使用K折验证
         print("加载数据...")

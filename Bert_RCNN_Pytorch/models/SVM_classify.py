@@ -1,8 +1,9 @@
+import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
+from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import *
 
 class SVM_classify:
@@ -11,8 +12,11 @@ class SVM_classify:
         self.x_test = []
         self.y_train = []
         self.y_test = []
-        # 记录acc
+        # 记录acc,pre,recall,f1
         self.average_acc = 0
+        self.average_pre = 0
+        self.average_recall = 0
+        self.average_f1 = 0
         # 数据集的位置
         self.dataLocation = '../dataSet/data/Chinese_Rumor_dataset_clean.xls'
 
@@ -38,7 +42,7 @@ class SVM_classify:
         fold = 1
         # 读取数据集
         df = pd.read_excel(self.dataLocation)
-        kf = KFold(n_splits=5, shuffle=True)  # , random_state=42
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)  # , random_state=42
         # 切割成五个数据集
         for train_index, test_index in kf.split(df):
             print('**********Fold ' + str(fold) + '**********')
@@ -55,7 +59,13 @@ class SVM_classify:
             self.svmClassify()
             fold += 1
         print('Test Average Acc:{0:>6.2%}'.format(self.average_acc / 5))
-
+        print('Fake: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((self.average_pre / 5)[1], (self.average_recall / 5)[1],
+                                                                      (self.average_f1 / 5)[1]))
+        print('Real: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((self.average_pre / 5)[0], (self.average_recall / 5)[0],
+                                                                      (self.average_f1 / 5)[0]))
+        print('Total: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format(np.mean(self.average_pre / 5),
+                                                                       np.mean(self.average_recall / 5),
+                                                                       np.mean(self.average_f1 / 5)))
 
     # 处理样本
     def svmClassify(self):
@@ -67,33 +77,22 @@ class SVM_classify:
         # print(x_count_train.toarray())
         x_count_test = count_vec.transform(self.x_test)
 
-        # 去除停用词
-        # count_stop_vec = CountVectorizer(analyzer='word', stop_words='english')
-        # x_count_stop_train = count_stop_vec.fit_transform(self.x_train)
-        # x_count_stop_test = count_stop_vec.transform(self.x_test)
-
-        ## 模型训练
+        # 模型训练
         svc = SVC()
         svc.fit(x_count_train, self.y_train)
         y_predict = svc.predict(x_count_test)
         # 准确率
         acc = svc.score(x_count_test, self.y_test)
+        pre, recall, f1, sup = precision_recall_fscore_support(self.y_test, y_predict)
+        # 累加记录
         self.average_acc += acc
+        self.average_pre += pre
+        self.average_recall += recall
+        self.average_f1 += f1
         print('test acc:{0:>6.2%}'.format(acc))
-        target_name = ['non-rumor', 'rumor']
+        target_name = ['Real', 'Fake']
         print(classification_report(self.y_test, y_predict, target_names=target_name))
 
-        # ## TF−IDF处理后在训练
-        # ## 默认配置不去除停用词
-        # tfid_vec = TfidfVectorizer()
-        # x_tfid_train = tfid_vec.fit_transform(self.x_train)
-        # x_tfid_test = tfid_vec.transform(self.x_test)
-        #
-        # ## 模型训练
-        # mnb_tfid = SVC()
-        # mnb_tfid.fit(x_tfid_train, self.y_train)
-        # mnb_tfid_y_predict = mnb_tfid.predict(x_tfid_test)
-        # mnb_tfid.score(x_tfid_test, self.y_test)
 
 if __name__ == '__main__':
     svmC = SVM_classify()
