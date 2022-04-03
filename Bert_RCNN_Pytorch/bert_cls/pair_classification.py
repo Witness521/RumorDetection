@@ -26,7 +26,7 @@ class Config():
         self.class_list = ['Real', 'Fake']
         # 训练过程中的参数
         self.learning_rate = 5e-4
-        self.num_epochs = 8
+        self.num_epochs = 9
         self.batch_size = 50
         # 声明列表存储(固定名称)
         self.post_label_list = []
@@ -97,6 +97,8 @@ class Pair_classification():
             self.data_to_batch(train_data)
             # k折
             test_acc, test_loss, pre, recall, f1, sup = self.trainUtils.kFold_train(self.config, model, test_data)
+            # k折之后要把post_label_list_batch清空
+            self.config.post_label_list_batch.clear()
             # 将数据累加以计算平均值
             test_average_acc += test_acc
             test_average_loss += test_loss

@@ -92,6 +92,8 @@ class Classification():
             self.data_to_batch(train_data)
             # k折
             test_acc, test_loss, pre, recall, f1, sup = self.trainUtils.kFold_train(self.config, model, test_data)
+            # k折之后要把post_label_list_batch清空
+            self.config.post_label_list_batch.clear()
             # 将数据累加以计算平均值
             test_average_acc += test_acc
             test_average_loss += test_loss
