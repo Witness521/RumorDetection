@@ -3,9 +3,8 @@ import numpy as np
 import random
 import torch
 from tqdm import tqdm
-import torch.nn as nn
-import torch.nn.functional as F
-from sklearn import metrics
+from torch.utils.data import DataLoader
+from train_utils import TrainDataSet
 from mlp_model import Model
 from train_utils import TrainUtils
 from sklearn.model_selection import KFold
@@ -31,7 +30,6 @@ class Config():
         self.batch_size = 50
         # 声明列表存储(固定名称)
         self.post_label_list = []
-        self.post_label_list_batch = []  # list中存储(多个tensor, 多个label)
 
 class mean_cls():
     def __init__(self, config):
@@ -62,22 +60,15 @@ class mean_cls():
         train_data = self.config.post_label_list[0:math.floor(0.8 * pair_label_len)]
         valid_data = self.config.post_label_list[math.floor(0.8 * pair_label_len):math.floor(0.9 * pair_label_len)]
         test_data = self.config.post_label_list[math.floor(0.9 * pair_label_len):]
-        return train_data, valid_data, test_data
+        # 构建训练集 验证集 测试集的迭代器
+        trainDataset = TrainDataSet(train_data)
+        train_iter = DataLoader(trainDataset, self.config.batch_size, shuffle=False)
+        validDataset = TrainDataSet(valid_data)
+        valid_iter = DataLoader(validDataset, self.config.batch_size, shuffle=False)
+        testDataset = TrainDataSet(test_data)
+        test_iter = DataLoader(testDataset, self.config.batch_size, shuffle=False)
+        return train_iter, valid_iter, test_iter
 
-    '''按照self.batch_size的大小划分数据集'''
-    def data_to_batch(self, dataset):
-        for i in range(len(dataset)):
-            if i % self.config.batch_size == 0:
-                saved_post_emb = dataset[i][0].unsqueeze(0)
-                saved_label = dataset[i][1].unsqueeze(0)
-            elif (i + 1) % self.config.batch_size == 0:
-                saved_post_emb = torch.cat((saved_post_emb, dataset[i][0].unsqueeze(0)), dim=0)
-                saved_label = torch.cat((saved_label, dataset[i][1].unsqueeze(0)), dim=1)
-                saved_label = saved_label.squeeze(0)
-                self.config.post_label_list_batch.append((saved_post_emb, saved_label))
-            else:
-                saved_post_emb = torch.cat((saved_post_emb, dataset[i][0].unsqueeze(0)), dim=0)
-                saved_label = torch.cat((saved_label, dataset[i][1].unsqueeze(0)), dim=1)
 
     '''5折交叉验证'''
     def build_kFold_dataSet(self):
@@ -96,11 +87,12 @@ class mean_cls():
             # 根据第i折的索引获取data
             train_data = np.array(self.config.post_label_list)[train_index]
             test_data = np.array(self.config.post_label_list)[test_index]
-            self.data_to_batch(train_data)
+            trainDataset = TrainDataSet(train_data)
+            train_iter = DataLoader(trainDataset, self.config.batch_size, shuffle=False)
+            testDataset = TrainDataSet(test_data)
+            test_iter = DataLoader(testDataset, self.config.batch_size, shuffle=False)
             # k折
-            test_acc, test_loss, pre, recall, f1, sup = self.trainUtils.kFold_train(self.config, model, test_data)
-            # k折之后要把post_label_list_batch清空
-            self.config.post_label_list_batch.clear()
+            test_acc, test_loss, pre, recall, f1, sup = self.trainUtils.kFold_train(self.config, model, train_iter, test_iter)
             # 将数据累加以计算平均值
             test_average_acc += test_acc
             test_average_loss += test_loss
@@ -128,10 +120,8 @@ class mean_cls():
         if isKFold in ['Y', 'y']:  # 使用K折验证
             self.build_kFold_dataSet()
         elif isKFold in ['N', 'n']:  # 不使用K折验证
-            train_data, valid_data, test_data = self.divide_data()
-            # 将train_data变成batch
-            self.data_to_batch(train_data)
-            self.trainUtils.train(self.config, model, train_data, valid_data, test_data)
+            train_iter, valid_iter, test_iter = self.divide_data()
+            self.trainUtils.train(self.config, model, train_iter, valid_iter, test_iter)
 
 
 if __name__ == '__main__':
