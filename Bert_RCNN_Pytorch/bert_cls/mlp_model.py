@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 class Model(nn.Module):
     def __init__(self):
@@ -14,3 +15,4 @@ class Model(nn.Module):
         x = self.dropout(x)
         x = self.fc2(x)
         return x
+

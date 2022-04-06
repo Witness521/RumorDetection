@@ -10,7 +10,7 @@ class Config(object):
     """配置参数"""
     def __init__(self, dataset):
         # 模型名称
-        self.model_name = 'bert'
+        self.model_name = 'bertRCNN'
         # class_list类别
         self.class_list = [x.strip() for x in open(
             dataset + '/data/class.txt').readlines()]
