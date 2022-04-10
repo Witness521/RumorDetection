@@ -105,7 +105,7 @@ for iters in range(200):
         x = torch.tensor(node_features,dtype=torch.float)
         edge_index = torch.tensor([test_src_id, test_target_id], dtype=torch.long)
         y = torch.tensor([test_label[i]],dtype=torch.long)
-        single_news  = torch.tensor(test_news[i],dtype=torch.float)
+        single_news = torch.tensor(test_news[i],dtype=torch.float)
         img = torch.tensor(test_resnet_feature[i:i+1,:,:],dtype=torch.float)
         data = Data(x=x, edge_index=edge_index, y=y, news=single_news,img=img) 
         test_data_list.append(data) 
@@ -125,7 +125,7 @@ for iters in range(200):
         single_news  = torch.tensor(val_news[i],dtype=torch.float)
         img = torch.tensor(val_resnet_feature[i:i+1,:,:],dtype=torch.float)
         data = Data(x=x, edge_index=edge_index, y=y, news=single_news,img=img) 
-        val_data_list.append(data) 
+        val_data_list.append(data)
 
 
     # visualization
@@ -188,7 +188,7 @@ for iters in range(200):
     for epoch in range(EPOCH):
         losses = []
         for i,data in enumerate(train_dataloader):
-            model.train()        
+            model.train()
             model.zero_grad()
             data.to(device)
             preds = model(data)
