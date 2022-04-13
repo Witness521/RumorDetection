@@ -83,6 +83,7 @@ for iters in range(200):
         train_src_id.extend([i]*6)
         train_target_id.extend(list(range(6)))
 
+    # 训练集
     for i in range(len(train_label)):
         node_features = train_pairs[i]
         x = torch.tensor(node_features,dtype=torch.float)
@@ -92,7 +93,8 @@ for iters in range(200):
         img = torch.tensor(train_resnet_feature[i:i+1,:,:],dtype=torch.float)
         data = Data(x=x, edge_index=edge_index, y=y, news=single_news,img=img) 
         train_data_list.append(data) 
-    #####################################################################################################
+
+    # 测试集
     test_data_list = []
     test_src_id = []
     test_target_id = []
@@ -109,7 +111,8 @@ for iters in range(200):
         img = torch.tensor(test_resnet_feature[i:i+1,:,:],dtype=torch.float)
         data = Data(x=x, edge_index=edge_index, y=y, news=single_news,img=img) 
         test_data_list.append(data) 
-    ###########################################################################################################
+
+    # 验证集
     val_data_list = []
     val_src_id = []
     val_target_id = []

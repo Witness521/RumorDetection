@@ -2,7 +2,7 @@ import math
 import numpy as np
 import random
 import torch
-from mlp_model import Model
+from RCNN import Model
 from train_utils import TrainUtils
 from torch.utils.data import DataLoader
 from train_utils import TrainDataSet

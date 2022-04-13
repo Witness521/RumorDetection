@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from train_utils import TrainDataSet
-from mlp_model import Model
+from RCNN import Model
 from train_utils import TrainUtils
 from sklearn.model_selection import KFold
 
@@ -45,7 +45,8 @@ class mean_cls():
         for i in tqdm(range(3371)):
             tensor_all = torch.load(self.config.reviewLocation + str(i) + '.pt')
             tensor_all = torch.cat((tensor_all, post_tensor[i].unsqueeze(0)), dim=0)
-            tensor_average = torch.mean(tensor_all, dim=0)
+            tensor_average = torch.max(tensor_all, dim=0)[0]
+            # tensor_average = torch.mean(tensor_all, dim=0)
             if i <= 1531:
                 self.config.post_label_list.append((tensor_average, torch.tensor([1])))
             else:
