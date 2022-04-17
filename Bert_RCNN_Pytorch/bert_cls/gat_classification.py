@@ -4,11 +4,12 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
+from mlp_model import Model
 from torch_geometric.data import Data, DataLoader
 from torch_geometric.nn import GATConv
 from torch_scatter import scatter_mean
 import torch.nn.functional as F
-from mlp_model import Model
+from sklearn.model_selection import KFold
 from sklearn import metrics
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -27,9 +28,10 @@ class Config():
         self.save_path = '../dataSet/saved_dict/pair_cls.ckpt'
         self.class_list = ['Real', 'Fake']
         # 训练过程中的参数
-        self.learning_rate = 5e-4
-        self.num_epochs = 3
-        self.batch_size = 1
+        self.learning_rate = 3e-4
+        self.num_epochs = 9
+        self.batch_size = 25
+        self.net_tensor_num = 20
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # 设备
         # 声明列表存储(固定名称)
         self.post_label_list = []
@@ -38,9 +40,9 @@ class Config():
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = GATConv(in_channels=768, out_channels=512, heads=4, concat=False)
-        self.conv2 = GATConv(in_channels=512, out_channels=256, heads=4, concat=False)
-        self.fc1 = nn.Linear(256, 2)
+        self.conv1 = GATConv(in_channels=768, out_channels=768, heads=12, concat=False)
+        self.conv2 = GATConv(in_channels=768, out_channels=768, heads=12, concat=False)
+        self.mlp = Model()
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -48,7 +50,7 @@ class Net(torch.nn.Module):
         x = self.conv2(x, edge_index)
         # 将x按照batch进行竖向平均
         x = scatter_mean(x, data.batch, dim=0)
-        x = self.fc1(x)
+        x = self.mlp(x)
         return x
 
 
@@ -58,12 +60,15 @@ class GAT_Cls():
         self.loss_function = nn.CrossEntropyLoss()
 
     '''
-        对数据进行加载并标记
+        对数据进行加载并标记，只取前6行
         对tensor进行存储，(pair_tensor, label)
     '''
     def load_data(self):
         for i in tqdm(range(3371)):
             tensor_all = torch.load(self.config.tensorLocation + str(i) + '.pt')
+            # 只取tensor的前6行，不足6行取整个tensor
+            if tensor_all.shape[0] >= self.config.net_tensor_num:
+                tensor_all = tensor_all[:self.config.net_tensor_num]
             if i <= 1531:
                 self.config.post_label_list.append((tensor_all, torch.tensor([1], dtype=torch.long)))
             else:
@@ -100,7 +105,7 @@ class GAT_Cls():
             target_id.clear()
         return DataLoader(data_list, batch_size=self.config.batch_size, shuffle=False)
 
-    # 构建dataLoader
+    '''构建dataLoader'''
     def build_dataLoader(self):
         self.load_data()
         train_data, valid_data, test_data = self.divide_data()
@@ -109,7 +114,7 @@ class GAT_Cls():
         test_dataloader = self.build_data(test_data)
         return train_dataloader, valid_dataloader, test_dataloader
 
-    # 训练方法
+    '''8:1:1 训练方法'''
     def train(self, train_dataloader, valid_dataloader, test_dataloader):
         model = Net()
         # 模型放置GPU
@@ -118,12 +123,6 @@ class GAT_Cls():
         total_batch = 0  # 记录进行到多少batch
         # 最佳损失
         best_loss = float('inf')
-        # 每隔多少个batch测试验证集
-        interval_batch = 300
-        # 将训练集的loss相加
-        train_total_loss = 0
-        train_true = []
-        train_pred = []
         for epoch in range(self.config.num_epochs):
             print('Epoch [{}/{}]'.format(epoch + 1, self.config.num_epochs))
             for i, data in enumerate(train_dataloader):
@@ -133,16 +132,14 @@ class GAT_Cls():
                 data.to(self.config.device)
                 preds = model(data)
                 loss = self.loss_function(preds, data.y)
-                # 累加train的loss
-                train_total_loss += loss.item()
-                train_true.extend(data.y.cpu().numpy())
-                train_pred.extend(torch.max(preds.data, 1)[1].cpu().numpy())
                 # 反向传播
                 loss.backward()
                 optimizer.step()
-                if total_batch % interval_batch == 0 and total_batch != 0:
+                if total_batch % 25 == 0 and total_batch != 0:
                     # 训练集准确率
-                    train_acc = metrics.accuracy_score(train_true, train_pred)
+                    true = data.y.cpu()
+                    preds = torch.max(preds.data, 1)[1].cpu()
+                    train_acc = metrics.accuracy_score(true, preds)
                     valid_acc, valid_loss = self.evaluate(model, valid_dataloader)
                     if valid_loss < best_loss:
                         best_loss = valid_loss
@@ -151,11 +148,93 @@ class GAT_Cls():
                     else:
                         improve = ''
                     msg = 'Iter: {0:>6},  Train Loss: {1:>5.2},  Train Acc: {2:>7.2%},  Valid Loss: {3:>5.2},  Valid Acc: {4:>6.2%} {5}'
-                    print(msg.format(total_batch, train_total_loss / interval_batch, train_acc, valid_loss, valid_acc, improve))
-                    model.train()
+                    print(msg.format(total_batch, loss.item(), train_acc, valid_loss, valid_acc, improve))
                 total_batch += 1
         # 对模型进行测试
         self.test(model, test_dataloader)
+
+    '''5折交叉验证########################################################################################'''
+    def build_kFold_dataSet(self):
+        self.load_data()
+        kf = KFold(n_splits=5, shuffle=False)
+        fold = 1
+        # 测试集的平均acc和loss
+        test_average_acc = 0
+        test_average_loss = 0
+        test_all_pre = 0
+        test_all_recall = 0
+        test_all_f1 = 0
+        for train_index, test_index in kf.split(self.config.post_label_list):
+            print('**********Fold ' + str(fold) + '**********')
+            # 根据第i折的索引获取data
+            train_data = np.array(self.config.post_label_list)[train_index]
+            test_data = np.array(self.config.post_label_list)[test_index]
+            train_dataLoader = self.build_data(train_data)
+            test_dataLoader = self.build_data(test_data)
+            # k折
+            test_acc, test_loss, pre, recall, f1, sup = self.kFold_train(train_dataLoader, test_dataLoader)
+            # 将数据累加以计算平均值
+            test_average_acc += test_acc
+            test_average_loss += test_loss
+            test_all_pre += pre
+            test_all_recall += recall
+            test_all_f1 += f1
+            ####
+            fold += 1
+            print(end='\n\n')
+        # 打印K折的平均准确度和损失
+        print("5-Fold Test Acc:{0:>7.2%}".format(test_average_acc / 5))
+        print("5-Fold Test Loss:{0:>5.2}".format(test_average_loss / 5))
+        print('Fake: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((test_all_pre / 5)[1], (test_all_recall / 5)[1],
+                                                                      (test_all_f1 / 5)[1]))
+        print('Real: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format((test_all_pre / 5)[0], (test_all_recall / 5)[0],
+                                                                      (test_all_f1 / 5)[0]))
+        print('Total: pre:{0:>6.2%},rec:{1:>6.2%},f1:{2:>6.2%}'.format(np.mean(test_all_pre / 5), np.mean(test_all_recall / 5),
+                                                                       np.mean(test_all_f1 / 5)))
+
+    '''5折验证的方法进行训练'''
+    def kFold_train(self, train_dataset, test_dataset):
+        # 每次重新装载model
+        model = Net()
+        # 模型放置GPU
+        model.to(self.config.device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.config.learning_rate)
+        total_batch = 0  # 记录进行到多少batch
+        # 最佳损失
+        best_loss = float('inf')
+        for epoch in range(self.config.num_epochs):
+            print('Epoch [{}/{}]'.format(epoch + 1, self.config.num_epochs))
+            for data in train_dataset:
+                model.train()
+                # 将模型的参数梯度设置为0
+                model.zero_grad()
+                data.to(self.config.device)
+                preds = model(data)
+                # 计算交叉熵损失
+                loss = self.loss_function(preds, data.y)
+                # 反向传播，计算当前梯度
+                loss.backward()
+                # 根据梯度更新网络参数
+                optimizer.step()
+                if total_batch % 50 == 0:
+                    # 训练集准确率
+                    true = data.y.cpu()
+                    preds = torch.max(preds.data, 1)[1].cpu()
+                    # 训练集准确率
+                    train_acc = metrics.accuracy_score(true, preds)
+                    if loss.item() < best_loss:
+                        best_loss = loss.item()
+                        torch.save(model.state_dict(), self.config.save_path)
+                        improve = '*'
+                    else:
+                        improve = ''
+                    msg = 'Iter: {0:>6},  Train Loss: {1:>5.2},  Train Acc: {2:>7.2%} {3}'
+                    print(msg.format(total_batch, loss.item(), train_acc, improve))
+                total_batch += 1
+        # 对模型进行测试
+        test_acc, test_loss, pre, recall, f1, sup = self.test(model, test_dataset)
+        return test_acc, test_loss, pre, recall, f1, sup
+    ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
     # 评估方法
     def evaluate(self, model, valid_dataLoader, test=False):
@@ -200,8 +279,15 @@ class GAT_Cls():
         print(test_report)
         return test_acc, test_loss, pre, recall, f1, sup
 
+    '''执行'''
+    def execute(self):
+        isKFold = input("请选择是否使用K折验证(Y/N)")
+        if isKFold in ['Y', 'y']:  # 使用K折验证
+            self.build_kFold_dataSet()
+        elif isKFold in ['N', 'n']:  # 不使用K折验证
+            train_dataloader, valid_dataloader, test_dataloader = self.build_dataLoader()
+            self.train(train_dataloader, valid_dataloader, test_dataloader)
+
 if __name__ == '__main__':
     cls = GAT_Cls(Config())
-    train_dataloader, valid_dataloader, test_dataloader = cls.build_dataLoader()
-    cls.train(train_dataloader, valid_dataloader, test_dataloader)
-
+    cls.execute()
