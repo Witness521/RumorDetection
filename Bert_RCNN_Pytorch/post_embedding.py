@@ -15,7 +15,6 @@ class Config(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # 设备
         self.bert_path = './bert_pretrain'
         self.dataLocation = 'dataSet/data/Chinese_Rumor_dataset_clean.xls'
-        # self.dataLocation = 'dataSet/data/reduced_data.xlsx'
         # 词嵌入的长度
         self.pad_size = 140
 
@@ -116,8 +115,6 @@ class Model(nn.Module):
         # 最后将post_emb转成tensor进行存储
         post_emb = torch.from_numpy(post_emb)
         torch.save(post_emb, './dataSet/saved_tensor/post_embedding.pt')
-        # 存储self.id_list验证post的顺序
-        numpy.save('dataSet/saved_tensor/id_sequence.npy', numpy.array(self.id_list))
 
 
 if __name__ == '__main__':

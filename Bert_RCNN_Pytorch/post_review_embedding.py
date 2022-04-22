@@ -15,7 +15,6 @@ class Config(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # 设备
         self.bert_path = './bert_pretrain'
         self.dataLocation = 'dataSet/data/Chinese_Rumor_dataset_clean.xls'
-        # self.dataLocation = 'dataSet/data/reduced_data.xlsx'
         # 词嵌入的长度
         self.pad_size = 170  # post(140) + review(30) 170
 
